@@ -6,9 +6,11 @@ export default defineConfig({
   server: {
     port: 1043,
     strictPort: true,
+    allowedHosts: ['energylab.eminkartci.com'],
   },
   preview: {
     port: 1043,
     strictPort: true,
+    allowedHosts: ['energylab.eminkartci.com'],
   },
 })
