@@ -1,0 +1,26 @@
+# Dependencies & build output
+ui/node_modules/
+ui/dist/
+
+# Vite cache / temp config bundles
+ui/vite.config.js.timestamp-*
+ui/.vite/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Netlify local state (machine-specific)
+ui/.netlify/state.json
+
+# Logs
+*.log
+npm-debug.log*
