@@ -1,18 +1,30 @@
-import { ANNUAL_REVENUE, ZONES } from './data'
+import { ANNUAL_REVENUE, ANNUAL_FER_Z_MARKET_PRICE, ZONES } from './data'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const BASE_PV_MWP   = 150
 const BASE_WIND_MWP = 100
 const BASE_BESS_MWH = 150
-const BASE_GEN_MWH  = 462_730   // annual generation at base capacity
+const BASE_GEN_MWH      = 462_730   // annual generation at base capacity (Merchant)
+const BASE_FER_Z_GEN_MWH = 467_457  // FER Z dispatch: fewer BESS RTE losses → more net export
 const PV_GEN_SHARE  = 0.60      // PV generates ~60% at Palermo
 const WIND_GEN_SHARE = 0.40
 
-// BESS RTE calibration (derived from Excel Merchant vs FER Z dispatch):
-// Merchant export 462.7 GWh vs FER Z 467.5 GWh → 4.8 GWh net loss from arbitrage cycling
-// Implied charge throughput = 4.8 GWh / (1 − 0.87) ≈ 36,900 MWh → 246 cycles × 150 MWh
-const BASE_BESS_RTE    = 0.87
+// BESS RTE calibration (vF source: FER_Z_PV_BESS_Financial_Model_vF.xlsx):
+// Excel Inputs C48 = 90% RTE. ANNUAL_REVENUE Merchant series baked at 90% RTE.
+// 246 cycles/year at 150 MWh = 36,900 MWh charge throughput (Merchant arbitrage).
+const BASE_BESS_RTE    = 0.90
 const BESS_ANNUAL_CYCLES = 246  // full cycles per year at base 150 MWh capacity (Merchant mode)
+
+// PPA dispatch (Excel PPA/FER X Dispatch Strategy sheet, Y2 base year, 87% BESS RTE):
+// 60% of gross renewable gen → PPA offtaker; BESS arbitrages only the 40% merchant portion.
+// Analytical formula back-calculated so that:
+//   Y2  revenue = 43.1 M (ppaVolumePct=60, strike=65)
+//   Y16 revenue = 64.2 M (ppaVolumePct=60, strike=85.77)
+//   volumeVariation targets match Excel ±0.04 pp IRR (relative ±20% of base ppaVolumePct)
+const BASE_PPA_GROSS_GEN    = 468_322  // MWh: total gross renewable gen in PPA dispatch
+const PPA_BESS_NET_LOSS     =   4_690  // MWh: BESS net loss (charge − discharge) at 87% RTE dispatch
+const PPA_BASE_PRICE_ALPHA  =  0.94949 // flat market price / Merchant capturePrice (same year)
+const PPA_BESS_ARB_MWH      =  19_858  // BESS arb value normalized to unit capturePrice (MWh-equiv)
 
 // Base average capture prices (€/MWh) derived from model revenue / generation
 const BASE_CAPTURE_PRICE = ANNUAL_REVENUE.map(r => (r * 1e6) / BASE_GEN_MWH)
@@ -93,7 +105,7 @@ export function buildModel(a) {
 
   // ── BESS replacement ───────────────────────────────────────────────────────
   const bessRepCost   = bessHard * (bessReplacementCostPct / 100)
-  const bessAnnualRes = bessRepCost / bessReplacementYear
+  const bessAnnualRes = bessRepCost / (bessReplacementYear - 1)
 
   // ── Debt ───────────────────────────────────────────────────────────────────
   const seniorDebt = totalCapex * (ltv / 100)
@@ -123,28 +135,39 @@ export function buildModel(a) {
     // Revenue
     const capturePrice = BASE_CAPTURE_PRICE[i] * zone.priceMultiplier * (a.merchantPriceAdj ?? 1)
 
-    // BESS RTE adjustment: base revenue array was computed at 87% RTE.
-    // ΔRevenue = charge_throughput × (new_RTE − base_RTE) × avg_discharge_price.
-    // Applied proportionally to each scenario's merchant component only.
+    // BESS RTE adjustment: base revenue array (ANNUAL_REVENUE) was calibrated at 90% RTE.
+    // ΔRevenue = charge_throughput × (new_RTE − 90%) × capturePrice.
+    // At default bessRTE=90% this term is zero; non-zero only in RTE sensitivity sweeps.
     const bessRteAdj = (bessRteFrac - BASE_BESS_RTE) * bessChargeMWh * capturePrice / 1e6
 
     let revenue
     if (ppaType > 0 && y >= ppaStartYear && y < ppaStartYear + ppaDuration) {
       const ppaYr  = y - ppaStartYear
       const strike = ppaStrike * Math.pow(1 + ppaGrowth / 100, ppaYr)
-      const ppaVol = scaledGenMWh * (ppaVolumePct / 100)
-      const mchVol = scaledGenMWh * (1 - ppaVolumePct / 100)
-      // BESS arbitrages only the merchant residual share
-      revenue = (ppaVol * strike + mchVol * capturePrice) / 1e6
-             + bessRteAdj * (1 - ppaVolumePct / 100)
+      // Analytical PPA dispatch: BESS arbitrage concentrated on (1-p) merchant fraction.
+      // ppaMchPrice derived from decomposing capturePrice into flat market + BESS uplift,
+      // applying BESS arb only to merchant MWh. Constants back-calculated from Excel dispatch.
+      const p           = ppaVolumePct / 100
+      const mchGrossBase = BASE_PPA_GROSS_GEN * (1 - p)  // unscaled gross merchant
+      const ppaMchPrice  = capturePrice
+                         * (mchGrossBase * PPA_BASE_PRICE_ALPHA + PPA_BESS_ARB_MWH)
+                         / (mchGrossBase - PPA_BESS_NET_LOSS)
+      const ppaVol = BASE_PPA_GROSS_GEN * p * capScale * zone.genMultiplier * genBasisScale
+      const mchVol = (mchGrossBase - PPA_BESS_NET_LOSS) * capScale * zone.genMultiplier * genBasisScale
+      revenue = (ppaVol * strike + mchVol * ppaMchPrice) / 1e6
+             + bessRteAdj * (1 - p)
     } else if (ferZEnabled && y >= ferZStartYear && y < ferZStartYear + ferZDuration) {
-      const ferYr  = y - ferZStartYear
+      // Excel convention: first delivery year (Y2) = ferYr 1, so strike = ferZStrike × (1+g)^1
+      const ferYr  = y - ferZStartYear + 1
       const strike = ferZStrike * Math.pow(1 + ferZGrowth / 100, ferYr)
       const blMW   = (pvMWp + windMWp) * (ferZBaseloadPct / 100)
       const blMWh  = blMW * 8760
-      const mchMWh = Math.max(0, scaledGenMWh - blMWh)
-      // FER Z BESS mainly smooths for baseload (Excel: ~31 cycles vs 246 for Merchant = 12.6%)
-      revenue = (blMWh * strike + mchMWh * capturePrice) / 1e6 + bessRteAdj * 0.126
+      // FER Z dispatch generates more than Merchant (fewer BESS RTE losses — BESS smooths, not arbitrages)
+      const ferZGenMWh = BASE_FER_Z_GEN_MWH * capScale * zone.genMultiplier * genBasisScale
+      const mchMWh = Math.max(0, ferZGenMWh - blMWh)
+      // Market price for surplus: flat GME price, no BESS arbitrage uplift
+      const ferZMarketPrice = ANNUAL_FER_Z_MARKET_PRICE[i] * zone.priceMultiplier * (a.merchantPriceAdj ?? 1)
+      revenue = (blMWh * strike + mchMWh * ferZMarketPrice) / 1e6
     } else {
       // Pure merchant: full BESS arbitrage cycling
       revenue = scaledGenMWh * capturePrice / 1e6 + bessRteAdj
@@ -167,7 +190,10 @@ export function buildModel(a) {
     // Tax
     const ebit   = ebitda - dep
     const ebt    = ebit - interest
+    // Levered tax (EBT-based): used for CFADS, P&L, and equity FCF
     const taxAmt = Math.max(0, ebt) * (taxRate / 100)
+    // Unlevered tax (EBIT-based): used for project FCF / project IRR only
+    const taxAmtProject = Math.max(0, ebit) * (taxRate / 100)
 
     // BESS replacement capex this year
     const capexInYear = y === bessReplacementYear ? bessRepCost : 0
@@ -176,9 +202,9 @@ export function buildModel(a) {
     const reserve = y < bessReplacementYear ? bessAnnualRes : 0
     const cfads = ebitda - taxAmt - reserve
 
-    // FCF
-    const projectFCF = ebitda - taxAmt - capexInYear
-    const equityFCF  = projectFCF - ds
+    // FCF — project uses unlevered tax; equity uses levered tax (decoupled)
+    const projectFCF = ebitda - taxAmtProject - capexInYear
+    const equityFCF  = ebitda - taxAmt - capexInYear - ds
 
     rows.push({
       y, revenue, opex, ebitda,

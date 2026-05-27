@@ -1,7 +1,9 @@
-# Netlify: site "Base directory" = ui (repository root'un altındaki ui klasörü)
 [build]
-  command = "npm run build"
-  publish = "dist"
+  command   = "npm run build"
+  publish   = "dist"
 
-[build.environment]
-  NODE_VERSION = "20"
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"

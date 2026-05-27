@@ -34,12 +34,12 @@ function sweep(baseA, paramFn, steps) {
   })
   return {
     labels:     rows.map(r => r.label),
-    projectIRR: rows.map(r => +r.m.projectIRR.toFixed(2)),
-    equityIRR:  rows.map(r => +r.m.equityIRR.toFixed(2)),
-    minDSCR:    rows.map(r => +r.m.minDSCR.toFixed(2)),
-    minLLCR:    rows.map(r => +r.m.minLLCR.toFixed(2)),
-    projectNPV: rows.map(r => +r.m.projectNPV.toFixed(1)),
-    equityNPV:  rows.map(r => +r.m.equityNPV.toFixed(1)),
+    projectIRR: rows.map(r => r.m.projectIRR),
+    equityIRR:  rows.map(r => r.m.equityIRR),
+    minDSCR:    rows.map(r => r.m.minDSCR),
+    minLLCR:    rows.map(r => r.m.minLLCR),
+    projectNPV: rows.map(r => r.m.projectNPV),
+    equityNPV:  rows.map(r => r.m.equityNPV),
   }
 }
 
@@ -458,10 +458,11 @@ function Legend_() {
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-export default function Sensitivity({ assumptions }) {
+export default function Sensitivity({ assumptions, scenarios }) {
   const [tab, setTab] = useState('merchant')
 
-  // Compute all sensitivity data live from current assumptions
+  // scenarios.merchant / .ppa / .ferz come from App.jsx (single source of truth).
+  // Only the sensitivity sweeps are computed here — base models are NOT re-derived.
   const sens = useMemo(() => {
     const merch = { ...assumptions, ppaType: 0, ferZEnabled: false }
     const ppa   = { ...assumptions, ppaType: 1, ferZEnabled: false }
@@ -469,27 +470,27 @@ export default function Sensitivity({ assumptions }) {
 
     return {
       merchant: {
-        base:                buildModel(merch),
+        base:                scenarios.merchant,
         priceVariation:      sweep(merch, priceFn,                                           STEPS7),
         capexVariation:      sweep(merch, capexFn,                                           STEPS7),
         costOfDebtVariation: sweep(merch, codFn,                                             STEPS5),
       },
       ppa: {
-        base:                buildModel(ppa),
+        base:                scenarios.ppa,
         priceVariation:      sweep(ppa,   (f, a) => ({ ppaStrike:      a.ppaStrike * f }),   STEPS7),
         capexVariation:      sweep(ppa,   capexFn,                                           STEPS7),
         volumeVariation:     sweep(ppa,   (f, a) => ({ ppaVolumePct:   a.ppaVolumePct * f }),STEPS5),
         costOfDebtVariation: sweep(ppa,   codFn,                                             STEPS5),
       },
       ferz: {
-        base:                buildModel(ferz),
+        base:                scenarios.ferz,
         strikeVariation:     sweep(ferz,  (f, a) => ({ ferZStrike:      a.ferZStrike * f }),  STEPS7),
         capexVariation:      sweep(ferz,  capexFn,                                            STEPS7),
         baseloadVariation:   sweep(ferz,  (f, a) => ({ ferZBaseloadPct: a.ferZBaseloadPct * f }), STEPS5),
         costOfDebtVariation: sweep(ferz,  codFn,                                              STEPS5),
       },
     }
-  }, [assumptions])
+  }, [assumptions, scenarios])
 
   return (
     <div className="space-y-5">

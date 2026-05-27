@@ -22,6 +22,14 @@ export default function App() {
 
   const model = useMemo(() => buildModel(assumptions), [assumptions])
 
+  // Canonical base-case models for all three revenue structures.
+  // Computed once here so every page references the same object — no duplicate buildModel calls.
+  const scenarios = useMemo(() => ({
+    merchant: buildModel({ ...assumptions, ppaType: 0, ferZEnabled: false }),
+    ppa:      buildModel({ ...assumptions, ppaType: 1, ferZEnabled: false }),
+    ferz:     buildModel({ ...assumptions, ppaType: 0, ferZEnabled: true  }),
+  }), [assumptions])
+
   function update(key, value) {
     setAssumptions(prev => ({ ...prev, [key]: value }))
     setChanged(true)
@@ -105,8 +113,8 @@ export default function App() {
         {activeTab === 'dashboard'   && <Dashboard      model={model} assumptions={assumptions} />}
         {activeTab === 'assumptions' && <Assumptions    assumptions={assumptions} onUpdate={update} model={model} />}
         {activeTab === 'financial'   && <FinancialModel model={model} assumptions={assumptions} />}
-        {activeTab === 'sensitivity' && <Sensitivity assumptions={assumptions} />}
-        {activeTab === 'ppa'         && <PPAAnalysis assumptions={assumptions} onUpdate={update} />}
+        {activeTab === 'sensitivity' && <Sensitivity assumptions={assumptions} scenarios={scenarios} />}
+        {activeTab === 'ppa'         && <PPAAnalysis assumptions={assumptions} scenarios={scenarios} onUpdate={update} />}
       </main>
 
       <footer className="bg-white border-t border-slate-100 text-center text-xs text-slate-400 py-2 flex-shrink-0">

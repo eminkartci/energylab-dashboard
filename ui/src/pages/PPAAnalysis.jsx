@@ -66,7 +66,7 @@ function DscrTooltip({ active, payload, label }) {
   )
 }
 
-export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, onUpdate }) {
+export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, scenarios, onUpdate }) {
   // ── Read live values from shared assumptions ─────────────────────────────
   const zone   = assumptions.zone   || 'SICI'
   const strike = assumptions.ppaStrike
@@ -74,10 +74,11 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, onUpdate }
 
   const LENDER_THRESHOLD = 1.25
 
-  // ── Base PPA model using ALL shared assumptions ──────────────────────────
+  // ── Base PPA model: use canonical model from App.jsx (single source of truth) ──
+  // Falls back to local buildScenario only when scenarios prop is unavailable.
   const baseMod = useMemo(() =>
-    buildScenario(assumptions, { ppaType: 1, ferZEnabled: false }),
-    [assumptions]
+    scenarios?.ppa ?? buildScenario(assumptions, { ppaType: 1, ferZEnabled: false }),
+    [assumptions, scenarios]
   )
 
   // ── DSCR time-series: base / −20% / +20% strike ──────────────────────────
@@ -106,16 +107,17 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, onUpdate }
   )
 
   // ── Three-scenario comparison: Merchant / PPA / FER Z ────────────────────
-  const scenarios = useMemo(() => {
-    const merchant = buildScenario(assumptions, { ppaType: 0, ferZEnabled: false })
-    const ppa      = buildScenario(assumptions, { ppaType: 1, ferZEnabled: false })
-    const ferZ     = buildScenario(assumptions, { ppaType: 0, ferZEnabled: true })
+  // Use canonical models from App.jsx scenarios prop; fall back to local computation only if unavailable.
+  const scenarioRows = useMemo(() => {
+    const merchant = scenarios?.merchant ?? buildScenario(assumptions, { ppaType: 0, ferZEnabled: false })
+    const ppa      = scenarios?.ppa      ?? buildScenario(assumptions, { ppaType: 1, ferZEnabled: false })
+    const ferZ     = scenarios?.ferz     ?? buildScenario(assumptions, { ppaType: 0, ferZEnabled: true })
     return [
       { id: 'merchant', label: 'Merchant',       sub: '100% variable',                          m: merchant, color: '#f59e0b', headerCls: 'text-orange-700' },
       { id: 'ppa',      label: `PPA ${volPct}%`, sub: `${volPct}% contracted · €${strike}/MWh`, m: ppa,      color: '#3b82f6', headerCls: 'text-blue-700'   },
       { id: 'ferz',     label: 'FER Z (illus.)', sub: `CfD @ €${assumptions.ferZStrike}/MWh`,   m: ferZ,     color: '#8b5cf6', headerCls: 'text-violet-700' },
     ]
-  }, [assumptions, strike, volPct])
+  }, [assumptions, scenarios, strike, volPct])
 
   // ── Stress test ───────────────────────────────────────────────────────────
   const stressScenarios = useMemo(() => [
@@ -269,7 +271,7 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, onUpdate }
             <thead>
               <tr>
                 <th className="text-left pb-2 text-slate-400 font-medium">Metric</th>
-                {scenarios.map(s => (
+                {scenarioRows.map(s => (
                   <th key={s.id} className={`text-center pb-1 font-semibold px-1 ${s.headerCls}`}>
                     {s.label}
                   </th>
@@ -277,7 +279,7 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, onUpdate }
               </tr>
               <tr>
                 <td />
-                {scenarios.map(s => (
+                {scenarioRows.map(s => (
                   <td key={s.id} className="text-center text-[9px] text-slate-400 px-1 pb-2">{s.sub}</td>
                 ))}
               </tr>
@@ -293,9 +295,9 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, onUpdate }
               ].map(row => (
                 <tr key={row.label} className="border-t border-slate-50">
                   <td className="py-2 pr-2 text-slate-500 font-medium whitespace-nowrap">{row.label}</td>
-                  {scenarios.map(s => (
+                  {scenarioRows.map(s => (
                     <td key={s.id} className="py-2 px-1 text-center text-slate-600">
-                      {row.raw ? row.fn(s.m) : row.fn(s.m)}
+                      {row.fn(s.m)}
                     </td>
                   ))}
                 </tr>

@@ -7,7 +7,7 @@ export const BASE_ASSUMPTIONS = {
   windMWp: 100,
   bessMWh: 150,
   bessMW: 37.5,
-  bessRTE: 87,           // % round-trip efficiency
+  bessRTE: 90,           // % round-trip efficiency
   lifetime: 25,
   constructionYears: 2,
   bessReplacementYear: 13,
@@ -37,7 +37,7 @@ export const BASE_ASSUMPTIONS = {
   ppaVolumePct: 60,      // % of PV+Wind output
 
   // 5. FER Z
-  ferZEnabled: true,
+  ferZEnabled: false,
   ferZStrike: 80,        // €/MWh (illustrative)
   ferZGrowth: 2.0,       // %
   ferZDuration: 20,      // years
@@ -116,17 +116,44 @@ export const CITY_TO_ZONE = {
 // ─── 25-year annual financial data (FER Z base case from Excel vF) ───────────
 // Arrays are indexed 0 = Y1, 1 = Y2, …, 24 = Y25
 //
-// ANNUAL_REVENUE stores implied merchant capture prices (scaled to BASE_GEN_MWH),
-// back-calculated from the Excel FER Z base case revenues so that calc.js
-// produces exact Excel revenues when the FER Z overlay is applied:
-//   revenue = (mchMWh × capturePrice + blMWh × ferZStrike) / 1e6
-// Y1 is pre-FER Z (pure merchant). Y22–Y25 are post-FER Z (pure merchant).
-// Y2–Y21: capturePrice derived from Excel EBITDA+OPEX to ensure exact match.
-
+// ANNUAL_REVENUE: 25-year Merchant scenario revenues (€M) from the vF model
+// (FER_Z_PV_BESS_Financial_Model_vF.xlsx, Project economics sheet, Merchant row).
+// Calibrated at 90% BESS RTE, 150 MWp PV + 100 MWp Wind + 150 MWh BESS, SICI zone.
+// Used to derive BASE_CAPTURE_PRICE in calc.js.
 export const ANNUAL_REVENUE = [
-  54.408, 51.319, 54.806, 58.304, 61.775, 65.272, 68.782, 70.112,
-  71.439, 72.793, 74.114, 75.459, 78.060, 80.673, 83.300, 85.932,
-  88.531, 90.010, 91.499, 92.981, 94.424, 102.045, 102.327, 102.610, 102.892,
+  54.408, 58.116, 61.824, 65.531, 69.239, 72.947, 74.358, 75.768,
+  77.179, 78.589, 80.000, 82.781, 85.562, 88.343, 91.123, 93.904,
+  95.476, 97.048, 98.620, 100.191, 101.763, 102.045, 102.327, 102.610, 102.892,
+]
+
+// ANNUAL_FER_Z_MARKET_PRICE: flat market capture price (€/MWh) for FER Z surplus generation.
+// In FER Z mode BESS smooths baseload profile (31 cycles) rather than arbitraging (246 cycles),
+// so the effective market price is lower than the BESS-arbitrage-enhanced Merchant capture price.
+// Back-calculated from FER_Z_PV_BESS_Financial_Model_vF.xlsx, FER Z Hourly Dispatch sheet.
+// Index 0 = Y1 (placeholder — FER Z contract active Y2–Y21 in base case).
+export const ANNUAL_FER_Z_MARKET_PRICE = [
+  109.35,    // Y1  (not in FER Z branch — placeholder)
+  109.3668,  // Y2
+  116.8160,  // Y3
+  124.2599,  // Y4
+  131.6983,  // Y5
+  139.1312,  // Y6
+  146.5584,  // Y7
+  149.4996,  // Y8
+  152.1859,  // Y9
+  155.1151,  // Y10
+  158.0382,  // Y11
+  160.7061,  // Y12
+  166.3546,  // Y13
+  171.9965,  // Y14
+  177.6318,  // Y15
+  183.2603,  // Y16
+  188.6330,  // Y17
+  192.0074,  // Y18
+  195.1257,  // Y19
+  198.2367,  // Y20
+  201.3402,  // Y21
+  201.3402, 201.3402, 201.3402, 201.3402,  // Y22–Y25 (outside FER Z window)
 ]
 
 export const ANNUAL_OPEX = [
