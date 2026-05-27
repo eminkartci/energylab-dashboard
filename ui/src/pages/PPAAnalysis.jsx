@@ -5,6 +5,9 @@ import {
 } from 'recharts'
 import { buildModel } from '../calc'
 import { BASE_ASSUMPTIONS, ZONES } from '../data'
+import ChartPanel from '../components/ChartPanel'
+import ExportButton from '../components/ExportButton'
+import { exportPPAWorkbook } from '../utils/excelExport'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function fmt(v, d = 2) {
@@ -139,6 +142,20 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, scenarios,
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <ExportButton
+          label="Download PPA Excel"
+          onExport={() => exportPPAWorkbook({
+            assumptions,
+            baseMod,
+            dscrSeries,
+            volSweep,
+            scenarioRows,
+            stressScenarios,
+            bep,
+          })}
+        />
+      </div>
 
       {/* ── Header ── */}
       <div className="bg-[#0f2444] text-white rounded-xl px-6 py-4">
@@ -243,11 +260,12 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, scenarios,
       {/* ── DSCR time-series + comparison table ── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
-        <div className="lg:col-span-3 bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-          <h3 className="text-sm font-semibold text-slate-700">Annual DSCR — Strike Price Sensitivity</h3>
-          <p className="text-xs text-slate-400 mt-0.5 mb-4">
-            Base (€{strike}/MWh) vs ±20% shock · {volPct}% contracted · {zoneLabel}
-          </p>
+        <ChartPanel
+          className="lg:col-span-3 bg-white rounded-xl shadow-sm border border-slate-100 p-5"
+          title="Annual DSCR — Strike Price Sensitivity"
+          subtitle={`Base (€${strike}/MWh) vs ±20% shock · ${volPct}% contracted · ${zoneLabel}`}
+          filename="ppa-dscr-strike-sensitivity"
+        >
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={dscrSeries} margin={{ top: 5, right: 20, left: 0, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -263,7 +281,7 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, scenarios,
               <Line dataKey="+20% strike" stroke="#10b981" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </ChartPanel>
 
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-100 p-5">
           <h3 className="text-sm font-semibold text-slate-700 mb-3">Structure Comparison</h3>
@@ -313,11 +331,12 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, scenarios,
       {/* ── Contracted volume sweep + stress test ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-          <h3 className="text-sm font-semibold text-slate-700">Contracted Volume vs. Min DSCR</h3>
-          <p className="text-xs text-slate-400 mt-0.5 mb-4">
-            How PPA coverage % affects DSCR floor · strike €{strike}/MWh · {zoneLabel}
-          </p>
+        <ChartPanel
+          title="Contracted Volume vs. Min DSCR"
+          subtitle={`PPA coverage % · strike €${strike}/MWh · ${zoneLabel}`}
+          filename="ppa-volume-vs-dscr"
+          className="bg-white rounded-xl shadow-sm border border-slate-100 p-5"
+        >
           <ResponsiveContainer width="100%" height={210}>
             <LineChart data={volSweep} margin={{ top: 5, right: 20, left: 0, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -330,7 +349,7 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, scenarios,
               <Line dataKey="minDSCR" name="Min DSCR" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4, fill: '#3b82f6' }} />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </ChartPanel>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
           <h3 className="text-sm font-semibold text-slate-700">Downside Resilience — Lender Stress Test</h3>

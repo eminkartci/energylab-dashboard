@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { CITY_TO_ZONE, ZONES } from '../data'
+import ExportButton from '../components/ExportButton'
+import { exportAssumptionsWorkbook } from '../utils/excelExport'
 
 // ─── SVG icon set (Heroicons 2 outline, 24×24 viewBox) ────────────────────────
 function IconMapPin({ className }) {
@@ -246,6 +248,12 @@ function CapexSummary({ model }) {
 export default function Assumptions({ assumptions: a, onUpdate: u, model }) {
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <ExportButton
+          label="Download assumptions Excel"
+          onExport={() => exportAssumptionsWorkbook(a, model)}
+        />
+      </div>
 
       {/* Info banner */}
       <div className="flex items-start gap-3 bg-blue-50/60 border border-blue-200/60 rounded-xl px-5 py-3.5 text-sm text-blue-800">

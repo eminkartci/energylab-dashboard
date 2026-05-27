@@ -3,6 +3,9 @@ import {
   ComposedChart, Bar, Line, Area, AreaChart, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
+import ChartPanel from '../components/ChartPanel'
+import ExportButton from '../components/ExportButton'
+import { exportFinancialModelWorkbook } from '../utils/excelExport'
 
 function fmt(v, d = 2) {
   if (v == null) return '—'
@@ -141,9 +144,20 @@ export default function FinancialModel({ model, assumptions }) {
 
   return (
     <div className="space-y-5">
+      <div className="flex justify-end">
+        <ExportButton
+          label="Download model Excel"
+          onExport={() => exportFinancialModelWorkbook({ model, assumptions })}
+        />
+      </div>
 
       {/* Chart toggle + chart */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+      <ChartPanel
+        className="bg-white rounded-xl shadow-sm border border-slate-100 p-5"
+        title="Time series"
+        subtitle={`${activeKey.label} · 25-year · €M`}
+        filename={`financial-model-${activeChart}`}
+      >
         <div className="flex flex-wrap gap-2 mb-4">
           {CHART_KEYS.map(k => (
             <button
@@ -177,7 +191,7 @@ export default function FinancialModel({ model, assumptions }) {
               stroke={activeKey.color} fill="url(#chartGrad)" strokeWidth={2.5} dot={false} />
           </AreaChart>
         </ResponsiveContainer>
-      </div>
+      </ChartPanel>
 
       {/* ── 25-year table ── */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">

@@ -4,6 +4,9 @@ import {
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import { buildModel } from '../calc'
+import ChartPanel from '../components/ChartPanel'
+import ExportButton from '../components/ExportButton'
+import { exportSensitivityWorkbook } from '../utils/excelExport'
 
 // ─── Sweep infrastructure ─────────────────────────────────────────────────────
 // Steps for ±20% symmetric sweeps
@@ -150,11 +153,14 @@ function SensTable({ title, data, baseIdx }) {
 }
 
 // ─── Sensitivity curve (single-variable line chart) ──────────────────────────
-function SensLine({ data, metric, title }) {
+function SensLine({ data, metric, title, filename }) {
   const arr = data[metric]
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-      <h4 className="text-sm font-semibold text-slate-700 mb-3">{title}</h4>
+    <ChartPanel
+      title={title}
+      filename={filename || `sensitivity-${metric}`}
+      className="bg-white rounded-xl shadow-sm border border-slate-100 p-5"
+    >
       <ResponsiveContainer width="100%" height={160}>
         <LineChart data={data.labels.map((l, i) => ({ l, v: arr[i] }))}
           margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -165,7 +171,7 @@ function SensLine({ data, metric, title }) {
           <Line type="monotone" dataKey="v" name={metric} stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
         </LineChart>
       </ResponsiveContainer>
-    </div>
+    </ChartPanel>
   )
 }
 
@@ -494,6 +500,13 @@ export default function Sensitivity({ assumptions, scenarios }) {
 
   return (
     <div className="space-y-5">
+      <div className="flex justify-end">
+        <ExportButton
+          label="Download sensitivity Excel"
+          onExport={() => exportSensitivityWorkbook(sens[tab], tab)}
+        />
+      </div>
+
       {/* Scenario tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-1 flex gap-1">
         {SCENARIOS.map(s => (

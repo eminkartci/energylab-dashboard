@@ -3,6 +3,14 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ReferenceLine, PieChart, Pie, Cell,
 } from 'recharts'
+import { useCallback, useState } from 'react'
+import ChartPanel from '../components/ChartPanel'
+import ExportButton from '../components/ExportButton'
+import BankabilityReviewPanel from '../components/BankabilityReviewPanel'
+import ProjectSiteMap from '../components/ProjectSiteMap'
+import { exportDashboardWorkbook } from '../utils/excelExport'
+import { requestBankerReview } from '../services/bankabilityReview'
+import { getStoredApiKey } from '../services/openaiChat'
 
 function fmt(n, dec = 1) {
   return n == null ? '—' : Number(n).toFixed(dec)
@@ -62,8 +70,46 @@ function Stat({ label, value, sub }) {
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
-export default function Dashboard({ model, assumptions }) {
+export default function Dashboard({
+  model,
+  assumptions,
+  scenarios,
+  activeScenarioName,
+  assumptionsChanged,
+  savedScenarios = [],
+}) {
   const r = model.rows
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [reviewLoading, setReviewLoading] = useState(false)
+  const [reviewError, setReviewError] = useState('')
+  const [reviewMarkdown, setReviewMarkdown] = useState('')
+
+  const runBankerReview = useCallback(async () => {
+    if (!getStoredApiKey()) {
+      setReviewError('OpenAI API key missing. Add it in AI Advisor ⚙ settings.')
+      setReviewOpen(true)
+      return
+    }
+    setReviewOpen(true)
+    setReviewLoading(true)
+    setReviewError('')
+    try {
+      const markdown = await requestBankerReview({
+        assumptions,
+        model,
+        scenarios,
+        activeScenarioName,
+        assumptionsChanged,
+        savedScenarios,
+      })
+      setReviewMarkdown(markdown)
+    } catch (err) {
+      setReviewError(err?.message || 'Review failed')
+      setReviewMarkdown('')
+    } finally {
+      setReviewLoading(false)
+    }
+  }, [assumptions, model, scenarios, activeScenarioName, assumptionsChanged, savedScenarios])
 
   const chartData = r.map(row => ({
     y: row.y,
@@ -87,7 +133,30 @@ export default function Dashboard({ model, assumptions }) {
   const ebitdaMargin = r[0] ? (r[0].ebitda / r[0].revenue) * 100 : 0
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 transition-all ${reviewOpen ? 'lg:mr-[28rem]' : ''}`}>
+      <div className="flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          onClick={runBankerReview}
+          disabled={reviewLoading}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#0f2444] bg-[#0f2444] text-white hover:bg-[#16335f] disabled:opacity-60"
+        >
+          {reviewLoading ? 'Analyzing…' : 'Banker review'}
+        </button>
+        <ExportButton
+          label="Download page Excel"
+          onExport={() => exportDashboardWorkbook({ model, assumptions, chartData, capexSlices })}
+        />
+      </div>
+
+      {/* ── Site map ── */}
+      <ProjectSiteMap
+        city={assumptions.city}
+        zone={assumptions.zone}
+        pvMWp={assumptions.pvMWp}
+        windMWp={assumptions.windMWp}
+        bessMWh={assumptions.bessMWh}
+      />
 
       {/* ── Primary KPIs ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -161,9 +230,12 @@ export default function Dashboard({ model, assumptions }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Revenue & EBITDA */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 p-5">
-          <p className="text-xs font-medium text-slate-400 mb-1">Revenue &amp; EBITDA</p>
-          <p className="text-[11px] text-slate-300 mb-4">25-year forecast · €M</p>
+        <ChartPanel
+          className="lg:col-span-2 bg-white rounded-xl border border-slate-100 p-5"
+          title="Revenue & EBITDA"
+          subtitle="25-year forecast · €M"
+          filename="dashboard-revenue-ebitda"
+        >
           <ResponsiveContainer width="100%" height={210}>
             <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
               <defs>
@@ -187,11 +259,14 @@ export default function Dashboard({ model, assumptions }) {
               <Area type="monotone" dataKey="EBITDA"  stroke="#10b981" fill="url(#gEbi)" strokeWidth={2} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
+        </ChartPanel>
 
         {/* CAPEX donut */}
-        <div className="bg-white rounded-xl border border-slate-100 p-5">
-          <p className="text-xs font-medium text-slate-400 mb-1">CAPEX Breakdown</p>
+        <ChartPanel
+          title="CAPEX Breakdown"
+          subtitle={`Total €${fmt(model.totalCapex, 1)}M`}
+          filename="dashboard-capex-breakdown"
+        >
           <p className="text-xl font-bold text-slate-800 mb-3">€{fmt(model.totalCapex, 1)}M</p>
           <ResponsiveContainer width="100%" height={150}>
             <PieChart>
@@ -215,18 +290,20 @@ export default function Dashboard({ model, assumptions }) {
               </div>
             ))}
           </div>
-        </div>
+        </ChartPanel>
       </div>
 
       {/* ── Charts row 2 ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* FCF bars */}
-        <div className="bg-white rounded-xl border border-slate-100 p-5">
-          <p className="text-xs font-medium text-slate-400 mb-1">Free Cash Flow</p>
-          <p className="text-[11px] text-slate-300 mb-4">25-year · €M · Project vs Equity</p>
+        <ChartPanel
+          title="Free Cash Flow"
+          subtitle="25-year · €M · Project vs Equity"
+          filename="dashboard-free-cash-flow"
+        >
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="35%">
+            <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="8%" barGap={3}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis dataKey="y" tick={{ fontSize: 11, fill: '#94a3b8' }}
                      tickFormatter={v => `Y${v}`} axisLine={false} tickLine={false} />
@@ -235,16 +312,18 @@ export default function Dashboard({ model, assumptions }) {
               <Tooltip content={<ChartTip />} />
               <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
               <ReferenceLine y={0} stroke="#e2e8f0" />
-              <Bar dataKey="Proj. FCF" fill="#6366f1" radius={[2,2,0,0]} maxBarSize={12} />
-              <Bar dataKey="Eq. FCF"   fill="#f59e0b" radius={[2,2,0,0]} maxBarSize={12} />
+              <Bar dataKey="Proj. FCF" fill="#6366f1" radius={[2,2,0,0]} maxBarSize={28} />
+              <Bar dataKey="Eq. FCF"   fill="#f59e0b" radius={[2,2,0,0]} maxBarSize={28} />
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </ChartPanel>
 
         {/* DSCR / LLCR */}
-        <div className="bg-white rounded-xl border border-slate-100 p-5">
-          <p className="text-xs font-medium text-slate-400 mb-1">DSCR &amp; LLCR</p>
-          <p className="text-[11px] text-slate-300 mb-4">Debt tenor · Covenant floors shown</p>
+        <ChartPanel
+          title="DSCR & LLCR"
+          subtitle="Debt tenor · Covenant floors shown"
+          filename="dashboard-dscr-llcr"
+        >
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={chartData.filter(d => d.DSCR !== null)}
                        margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
@@ -264,9 +343,18 @@ export default function Dashboard({ model, assumptions }) {
                     dot={{ r: 2.5, fill: '#8b5cf6', strokeWidth: 0 }} />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </ChartPanel>
       </div>
 
+      <BankabilityReviewPanel
+        open={reviewOpen}
+        loading={reviewLoading}
+        error={reviewError}
+        markdown={reviewMarkdown}
+        scenarioName={activeScenarioName}
+        onClose={() => setReviewOpen(false)}
+        onRefresh={runBankerReview}
+      />
     </div>
   )
 }
