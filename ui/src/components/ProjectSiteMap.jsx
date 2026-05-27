@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, Polygon, Polyline, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -38,6 +38,15 @@ export default function ProjectSiteMap({
   zoomBoost = 0,
   mapHeight = 220,
 }) {
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const apply = () => setIsMobile(!!mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
   const site = useMemo(
     () => buildProjectSite(city || 'Palermo', { pvMWp, windMWp, bessMWh }),
     [city, pvMWp, windMWp, bessMWh],
@@ -45,7 +54,8 @@ export default function ProjectSiteMap({
 
   const zoneLabel = zone ? ZONES[zone]?.label : null
   const mapCenter = site.center
-  const mapZoom = site.zoom + zoomBoost
+  // On mobile, zoom out a bit for better context
+  const mapZoom = site.zoom + zoomBoost + (isMobile ? -2 : 0)
   const connectionLines = site.connections.map(c => [c.from, c.to])
 
   const markers = [

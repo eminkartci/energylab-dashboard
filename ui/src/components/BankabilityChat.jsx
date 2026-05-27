@@ -152,8 +152,11 @@ export default function BankabilityChat({
   return (
     <div
       className={clsx(
-        'fixed z-50 flex flex-col items-end gap-2',
-        sidebarOpen ? 'right-[21rem] bottom-4' : 'right-4 bottom-4',
+        // Keep bottom-nav clickable on mobile:
+        // - lift chat launcher above the bottom bar
+        // - ensure bottom bar (z-40) stays on top
+        'fixed z-30 flex flex-col items-end gap-2',
+        sidebarOpen ? 'right-[21rem] bottom-[92px] md:bottom-4' : 'right-4 bottom-[92px] md:bottom-4',
       )}
     >
       {open && (
