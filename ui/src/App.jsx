@@ -7,6 +7,8 @@ import { startWelcomeTour } from './tours/welcomeTour'
 import { NAV_LABELS } from './config/navigation'
 import { PROJECT } from './data/credits'
 import AppSidebar, { readNavCollapsed } from './components/AppSidebar'
+import MobileHeader from './components/MobileHeader'
+import MobileBottomNav from './components/MobileBottomNav'
 import Dashboard      from './pages/Dashboard'
 import Assumptions    from './pages/Assumptions'
 import FinancialModel from './pages/FinancialModel'
@@ -28,6 +30,7 @@ export default function App() {
   const [scenarioPanelOpen, setScenarioPanelOpen] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
   const [chatOpen, setChatOpenState] = useState(readChatOpen)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   function setChatOpen(open) {
     setChatOpenState(open)
@@ -94,44 +97,71 @@ export default function App() {
     })
   }, [])
 
+  const pageTitle = activeTab === 'dashboard'
+    ? PROJECT.title
+    : (NAV_LABELS[activeTab] || activeTab)
+
+  const pageSubtitle = activeTab === 'dashboard'
+    ? `${PROJECT.group} · ${assumptions.city || '—'} · GME ${assumptions.zone || '—'}`
+    : activeTab === 'credits'
+      ? 'Energy Management Lab · Group 5 · Politecnico di Milano'
+      : `FER X & FER Z Scenarios · ${assumptions.city || '—'} · Zone ${assumptions.zone || '—'}`
+
   return (
     <div className="min-h-screen bg-slate-50">
-      <AppSidebar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onStartTour={startTour}
-        onSaveClick={() => setSaveOpen(true)}
-        onReset={reset}
-        activeScenarioName={activeName}
-        changed={changed}
-        city={assumptions.city}
-        zone={assumptions.zone}
-        zoneLabel={zoneLabel}
-        collapsed={navCollapsed}
-        onCollapsedChange={setNavCollapsed}
-      />
+      <div className="hidden md:block">
+        <AppSidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onStartTour={startTour}
+          onSaveClick={() => setSaveOpen(true)}
+          onReset={reset}
+          activeScenarioName={activeName}
+          changed={changed}
+          city={assumptions.city}
+          zone={assumptions.zone}
+          zoneLabel={zoneLabel}
+          collapsed={navCollapsed}
+          onCollapsedChange={setNavCollapsed}
+        />
+      </div>
 
       <div
         className={clsx(
           'min-h-screen flex flex-col transition-all duration-200',
-          navCollapsed ? 'ml-[68px]' : 'ml-64',
-          scenarioPanelOpen && 'mr-80',
+          'ml-0',
+          navCollapsed ? 'md:ml-[68px]' : 'md:ml-64',
+          scenarioPanelOpen && 'md:mr-80',
         )}
       >
-        <header className="bg-white border-b border-slate-200 px-6 py-3 flex-shrink-0">
+        <div className="md:hidden sticky top-0 z-40">
+          <MobileHeader
+            title={pageTitle}
+            subtitle={pageSubtitle}
+            menuOpen={mobileMenuOpen}
+            onMenuOpenChange={setMobileMenuOpen}
+            activeTab={activeTab}
+            onTabChange={(id) => {
+              setActiveTab(id)
+              setMobileMenuOpen(false)
+            }}
+            onOpenScenarios={() => setScenarioPanelOpen(true)}
+          />
+        </div>
+
+        <header className="hidden md:block bg-white border-b border-slate-200 px-6 py-3 flex-shrink-0">
           <h1 className="text-base font-semibold text-slate-800 leading-snug">
-            {activeTab === 'dashboard' ? PROJECT.title : (NAV_LABELS[activeTab] || activeTab)}
+            {pageTitle}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            {activeTab === 'dashboard'
-              ? `${PROJECT.group} · ${assumptions.city || '—'} · GME ${assumptions.zone || '—'}`
-              : activeTab === 'credits'
-                ? 'Energy Management Lab · Group 5 · Politecnico di Milano'
-                : `FER X & FER Z Scenarios · ${assumptions.city || '—'} · Zone ${assumptions.zone || '—'}`}
+            {pageSubtitle}
           </p>
         </header>
 
-        <main id="tour-main" className="flex-1 w-full max-w-screen-2xl mx-auto px-6 py-6">
+        <main
+          id="tour-main"
+          className="flex-1 w-full max-w-screen-2xl mx-auto px-4 py-4 pb-[84px] md:px-6 md:py-6 md:pb-6"
+        >
           {activeTab === 'dashboard' && (
             <Dashboard
               model={model}
@@ -165,6 +195,10 @@ export default function App() {
           )}
           {activeTab === 'credits' && <CreditsPage />}
         </main>
+
+        <div className="md:hidden">
+          <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
       </div>
 
       <ScenarioSidebar

@@ -16,13 +16,13 @@ export default function Credits() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6 items-stretch">
         <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <div className="px-6 py-5 bg-[#1b4332] text-white">
+          <div className="px-4 py-5 bg-[#1b4332] text-white md:px-6">
             <p className="text-[11px] uppercase tracking-widest text-emerald-200/90 font-semibold">
               {PROJECT.group}
             </p>
             <h2 className="text-xl font-bold leading-snug mt-2">{PROJECT.title}</h2>
           </div>
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-4 py-5 space-y-4 md:px-6">
             <p className="text-sm text-slate-600 leading-relaxed">
               This interactive financial model was developed as part of the Energy Management Lab
               at Politecnico di Milano, in collaboration with NativeStrategy.

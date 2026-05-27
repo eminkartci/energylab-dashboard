@@ -18,27 +18,9 @@ export default function ScenarioSidebar({
   onDelete,
   onOpenScenariosPage,
 }) {
-  return (
-    <>
-      <button
-        type="button"
-        id="tour-scenario-sidebar"
-        onClick={onToggle}
-        className={clsx(
-          'fixed right-0 top-1/2 -translate-y-1/2 z-40 rounded-l-lg border border-r-0 border-slate-200 bg-white px-2 py-3 shadow-md text-xs font-medium text-slate-600 hover:bg-slate-50',
-          open && 'translate-x-[-320px]',
-        )}
-        title={open ? 'Close scenarios panel' : 'Open scenarios panel'}
-      >
-        {open ? '›' : '‹'} Scenarios
-      </button>
-
-      <aside
-        className={clsx(
-          'fixed right-0 top-0 h-full w-80 bg-white border-l border-slate-200 shadow-2xl z-30 flex flex-col transition-transform duration-200',
-          open ? 'translate-x-0' : 'translate-x-full',
-        )}
-      >
+  function PanelBody() {
+    return (
+      <>
         <div className="px-4 py-4 border-b border-slate-100 bg-[#0f2444] text-white">
           <h2 className="text-sm font-semibold">Saved Scenarios</h2>
           <p className="text-[11px] text-blue-200 mt-1">SQLite · stored in this browser</p>
@@ -111,7 +93,78 @@ export default function ScenarioSidebar({
             </div>
           ))}
         </div>
-      </aside>
+      </>
+    )
+  }
+
+  return (
+    <>
+      {/* Desktop: right slide-over */}
+      <div className="hidden md:block">
+        <button
+          type="button"
+          id="tour-scenario-sidebar"
+          onClick={onToggle}
+          className={clsx(
+            'fixed right-0 top-1/2 -translate-y-1/2 z-40 rounded-l-lg border border-r-0 border-slate-200 bg-white px-2 py-3 shadow-md text-xs font-medium text-slate-600 hover:bg-slate-50',
+            open && 'translate-x-[-320px]',
+          )}
+          title={open ? 'Close scenarios panel' : 'Open scenarios panel'}
+        >
+          {open ? '›' : '‹'} Scenarios
+        </button>
+
+        <aside
+          className={clsx(
+            'fixed right-0 top-0 h-full w-80 bg-white border-l border-slate-200 shadow-2xl z-30 flex flex-col transition-transform duration-200',
+            open ? 'translate-x-0' : 'translate-x-full',
+          )}
+        >
+          <PanelBody />
+        </aside>
+      </div>
+
+      {/* Mobile: bottom-sheet */}
+      <div className="md:hidden">
+        <div
+          className={clsx(
+            'fixed inset-0 z-50',
+            open ? 'pointer-events-auto' : 'pointer-events-none',
+          )}
+          aria-hidden={!open}
+        >
+          <div
+            className={clsx(
+              'absolute inset-0 bg-slate-900/30 transition-opacity',
+              open ? 'opacity-100' : 'opacity-0',
+            )}
+            onClick={onToggle}
+          />
+
+          <aside
+            className={clsx(
+              'absolute left-0 right-0 bottom-0 bg-white rounded-t-2xl border-t border-slate-200 shadow-2xl transition-transform duration-200 flex flex-col max-h-[82vh]',
+              open ? 'translate-y-0' : 'translate-y-full',
+            )}
+          >
+            <div className="px-4 pt-3 pb-2 border-b border-slate-100">
+              <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto" />
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-xs font-semibold text-slate-700">Scenarios</p>
+                <button
+                  type="button"
+                  onClick={onToggle}
+                  className="text-xs font-medium text-slate-500 hover:text-slate-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <PanelBody />
+          </aside>
+        </div>
+      </div>
     </>
   )
 }

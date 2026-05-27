@@ -181,7 +181,7 @@ export default function Dashboard({
       </div>
 
       {/* ── Primary KPIs ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Tile
           label="Project IRR (unlevered)"
           value={`${fmt(model.projectIRR, 1)}%`}
@@ -214,7 +214,7 @@ export default function Dashboard({
 
       {/* ── Secondary stats strip ──────────────────────────────────────────── */}
       <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-        <div className="grid grid-cols-3 lg:grid-cols-6 divide-x divide-slate-100">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-slate-100">
           <Stat
             label="Total CAPEX"
             value={`€${fmt(model.totalCapex, 1)}M`}

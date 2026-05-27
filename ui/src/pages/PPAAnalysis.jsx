@@ -158,7 +158,7 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, scenarios,
       </div>
 
       {/* ── Header ── */}
-      <div className="bg-[#0f2444] text-white rounded-xl px-6 py-4">
+      <div className="bg-[#0f2444] text-white rounded-xl px-4 py-4 md:px-6">
         <h2 className="text-base font-bold">PPA Bankability Analysis — Strike Price & DSCR Sensitivity</h2>
         <p className="text-sm text-blue-300 mt-1">
           Lender view: how PPA strike price and contracted volume % affect DSCR, LLCR, and stress resilience.
@@ -216,7 +216,7 @@ export default function PPAAnalysis({ assumptions = BASE_ASSUMPTIONS, scenarios,
       </div>
 
       {/* ── KPI cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             label: 'Min DSCR (PPA)',
