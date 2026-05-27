@@ -55,7 +55,7 @@ export default function ProjectSiteMap({
   const zoneLabel = zone ? ZONES[zone]?.label : null
   const mapCenter = site.center
   // On mobile, zoom out a bit for better context
-  const mapZoom = site.zoom + zoomBoost + (isMobile ? -2 : 0)
+  const mapZoom = site.zoom + zoomBoost + (isMobile ? -3 : 0)
   const connectionLines = site.connections.map(c => [c.from, c.to])
 
   const markers = [
