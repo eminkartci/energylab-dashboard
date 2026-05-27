@@ -34,6 +34,11 @@ export const NAV_ITEMS = [
     label: 'Compare',
     keywords: 'compare delta side by side diff',
   },
+  {
+    id: 'credits',
+    label: 'Credits',
+    keywords: 'team authors contributors tutors about',
+  },
 ]
 
 export const NAV_LABELS = Object.fromEntries(NAV_ITEMS.map(i => [i.id, i.label]))

@@ -5,6 +5,7 @@ import { buildModel } from './calc'
 import { useScenarios } from './hooks/useScenarios'
 import { startWelcomeTour } from './tours/welcomeTour'
 import { NAV_LABELS } from './config/navigation'
+import { PROJECT } from './data/credits'
 import AppSidebar, { readNavCollapsed } from './components/AppSidebar'
 import Dashboard      from './pages/Dashboard'
 import Assumptions    from './pages/Assumptions'
@@ -13,6 +14,7 @@ import Sensitivity    from './pages/Sensitivity'
 import PPAAnalysis    from './pages/PPAAnalysis'
 import ScenariosPage  from './pages/Scenarios'
 import ComparePage    from './pages/Compare'
+import CreditsPage    from './pages/Credits'
 import ScenarioSidebar from './components/ScenarioSidebar'
 import SaveScenarioDialog from './components/SaveScenarioDialog'
 import BankabilityChat from './components/BankabilityChat'
@@ -117,9 +119,15 @@ export default function App() {
         )}
       >
         <header className="bg-white border-b border-slate-200 px-6 py-3 flex-shrink-0">
-          <h1 className="text-base font-semibold text-slate-800">{NAV_LABELS[activeTab] || activeTab}</h1>
+          <h1 className="text-base font-semibold text-slate-800 leading-snug">
+            {activeTab === 'dashboard' ? PROJECT.title : (NAV_LABELS[activeTab] || activeTab)}
+          </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            FER X &amp; FER Z Scenarios · {assumptions.city || '—'} · Zone {assumptions.zone || '—'}
+            {activeTab === 'dashboard'
+              ? `${PROJECT.group} · ${assumptions.city || '—'} · GME ${assumptions.zone || '—'}`
+              : activeTab === 'credits'
+                ? 'Energy Management Lab · Group 5 · Politecnico di Milano'
+                : `FER X & FER Z Scenarios · ${assumptions.city || '—'} · Zone ${assumptions.zone || '—'}`}
           </p>
         </header>
 
@@ -155,6 +163,7 @@ export default function App() {
           {activeTab === 'compare' && (
             <ComparePage records={records} liveAssumptions={assumptions} />
           )}
+          {activeTab === 'credits' && <CreditsPage />}
         </main>
       </div>
 

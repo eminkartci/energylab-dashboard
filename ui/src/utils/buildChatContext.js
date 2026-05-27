@@ -8,6 +8,7 @@ const TAB_LABELS = {
   ppa: 'PPA Analysis',
   scenarios: 'Scenarios',
   compare: 'Compare',
+  credits: 'Credits',
 }
 
 function summariseModel(model) {

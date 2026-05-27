@@ -102,6 +102,6 @@ export function buildProjectSite(city, { pvMWp, windMWp, bessMWh }) {
       { from: wind, to: bess, type: 'ac' },
       { from: bess, to: grid, type: 'hv' },
     ],
-    zoom: scale > 0.012 ? 10 : 11,
+    zoom: scale > 0.012 ? 13 : 14,
   }
 }

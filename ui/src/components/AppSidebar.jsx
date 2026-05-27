@@ -4,6 +4,7 @@ import { NAV_ITEMS } from '../config/navigation'
 import { NAV_ICONS, IconStar } from './nav/NavIcons'
 import { useNavStars } from '../hooks/useNavStars'
 import pkg from '../../package.json'
+import { PROJECT } from '../data/credits'
 
 export function readNavCollapsed() {
   return localStorage.getItem('energy-lab-nav-collapsed') === '1'
@@ -104,8 +105,8 @@ export default function AppSidebar({
         <img src="/polimi-logo.png" alt="Politecnico di Milano" className="h-8 w-auto brightness-0 invert flex-shrink-0" />
         {!collapsed && (
           <div className="min-w-0">
-            <p className="text-sm font-bold leading-tight truncate">Energy LAB</p>
-            <p className="text-[10px] text-blue-300 truncate">PV · Wind · BESS · Italy</p>
+            <p className="text-[11px] font-bold leading-snug line-clamp-3">{PROJECT.title}</p>
+            <p className="text-[10px] text-blue-300 truncate mt-1">{PROJECT.group}</p>
           </div>
         )}
       </div>
@@ -208,7 +209,7 @@ export default function AppSidebar({
         )}
 
         <p className={clsx('text-[10px] text-slate-500', collapsed && 'text-center')}>
-          {collapsed ? `v${pkg.version}` : `Energy LAB v${pkg.version}`}
+          {collapsed ? `v${pkg.version}` : `v${pkg.version}`}
         </p>
       </div>
     </aside>

@@ -11,6 +11,7 @@ import ProjectSiteMap from '../components/ProjectSiteMap'
 import { exportDashboardWorkbook } from '../utils/excelExport'
 import { requestBankerReview } from '../services/bankabilityReview'
 import { getStoredApiKey } from '../services/openaiChat'
+import { PROJECT } from '../data/credits'
 
 function fmt(n, dec = 1) {
   return n == null ? '—' : Number(n).toFixed(dec)
@@ -149,14 +150,35 @@ export default function Dashboard({
         />
       </div>
 
-      {/* ── Site map ── */}
-      <ProjectSiteMap
-        city={assumptions.city}
-        zone={assumptions.zone}
-        pvMWp={assumptions.pvMWp}
-        windMWp={assumptions.windMWp}
-        bessMWh={assumptions.bessMWh}
-      />
+      {/* ── Overview + site map ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+        <div className="bg-white rounded-xl border border-slate-100 px-5 py-5 flex flex-col justify-center">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-[#1b4332]">
+            {PROJECT.group}
+          </p>
+          <p className="text-sm text-slate-600 mt-3 leading-relaxed">
+            {PROJECT.summary}
+          </p>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <span className="px-2.5 py-1 rounded-full bg-slate-100 text-[11px] text-slate-600">
+              {assumptions.city || '—'} · GME {assumptions.zone || '—'}
+            </span>
+            <span className="px-2.5 py-1 rounded-full bg-slate-100 text-[11px] text-slate-600">
+              {assumptions.pvMWp} MWp PV · {assumptions.windMWp} MWp Wind · {assumptions.bessMWh} MWh BESS
+            </span>
+          </div>
+        </div>
+
+        <ProjectSiteMap
+          city={assumptions.city}
+          zone={assumptions.zone}
+          pvMWp={assumptions.pvMWp}
+          windMWp={assumptions.windMWp}
+          bessMWh={assumptions.bessMWh}
+          mapHeight={280}
+          zoomBoost={2}
+        />
+      </div>
 
       {/* ── Primary KPIs ───────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

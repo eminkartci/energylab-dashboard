@@ -29,7 +29,15 @@ function MapViewSync({ center, zoom }) {
   return null
 }
 
-export default function ProjectSiteMap({ city, zone, pvMWp, windMWp, bessMWh }) {
+export default function ProjectSiteMap({
+  city,
+  zone,
+  pvMWp,
+  windMWp,
+  bessMWh,
+  zoomBoost = 0,
+  mapHeight = 220,
+}) {
   const site = useMemo(
     () => buildProjectSite(city || 'Palermo', { pvMWp, windMWp, bessMWh }),
     [city, pvMWp, windMWp, bessMWh],
@@ -37,6 +45,7 @@ export default function ProjectSiteMap({ city, zone, pvMWp, windMWp, bessMWh }) 
 
   const zoneLabel = zone ? ZONES[zone]?.label : null
   const mapCenter = site.center
+  const mapZoom = site.zoom + zoomBoost
   const connectionLines = site.connections.map(c => [c.from, c.to])
 
   const markers = [
@@ -64,10 +73,10 @@ export default function ProjectSiteMap({ city, zone, pvMWp, windMWp, bessMWh }) 
         </div>
       </div>
 
-      <div className="h-[220px] w-full relative z-0">
+      <div className="w-full relative z-0" style={{ height: mapHeight }}>
         <MapContainer
           center={mapCenter}
-          zoom={site.zoom}
+          zoom={mapZoom}
           scrollWheelZoom={false}
           className="h-full w-full"
           attributionControl
@@ -76,7 +85,7 @@ export default function ProjectSiteMap({ city, zone, pvMWp, windMWp, bessMWh }) 
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <MapViewSync center={mapCenter} zoom={site.zoom} />
+          <MapViewSync center={mapCenter} zoom={mapZoom} />
 
           <Polygon
             positions={site.boundary}
